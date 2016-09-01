@@ -50,18 +50,19 @@ object NetworkFactory {
   val sigmoid = new Sigmoid
 
   def apply(inputs:Int, layers:List[Int]):Network = {
-    val size: Int = layers.head
-    layers.tail.foldRight(List(neuronList(inputs, size)))
-    ((count, neuronLists)=> )
-    null
-    //layers.foldRight(List.tabulate())
+    val initial = layers.head
+    val result = layers.tail.foldRight(List(neuronList(inputs, initial))) {
+      (count: Int, neuronLists: List[List[Neuron]])
+      => neuronList(neuronLists.head.length, count) :: neuronLists
+    }
+    result.reverse
   }
 
-  def neuronList(inputs: Int, count: Int): List[NeuronImpl] = {
+  def neuronList(inputs: Int, count: Int): List[Neuron] = {
     List.tabulate(count)(_ => newNeuron(inputs))
   }
 
-  def newNeuron(inputs: Int): NeuronImpl = {
+  def newNeuron(inputs: Int): Neuron = {
     new NeuronImpl("", randomDouble(), randomList(inputs), sigmoid)
   }
 
