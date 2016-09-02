@@ -1,6 +1,6 @@
 package org.kirhgoff.annie
 
-import org.kirhgoff.annie.interfaces.{Network, Neuron, TransferFunction}
+import org.kirhgoff.annie.interfaces.{Network, NetworkTraverse, Neuron, TransferFunction}
 
 import scala.util.Random
 
@@ -29,7 +29,7 @@ class NeuronImpl(
     val sum = (inputs, weights).zipped.map((input, weight) => input*weight).sum
     val parameter: Double = bias + sum
     val result = sigmoid.function(parameter)
-    println(s"Neuron inputs=$inputs weights=$weights " +
+    println(s"Calculating neuron inputs=$inputs weights=$weights " +
       s"parameter=$parameter result=$result")
     result
   }
@@ -46,6 +46,7 @@ class NeuralNetworkImpl(
   extends Network {
 
   override def calculate(inputs: List[Double]): Double = {
+    println("Calculating...")
     assert(inputs.length == layers.reverse.head.head.inputSize())
     val result = layers.foldRight(inputs)(
       (layer, outputs) => layer.map(neuron => neuron.output(outputs))
@@ -54,15 +55,13 @@ class NeuralNetworkImpl(
     result.head
   }
 
-  override def print():String = {
-    val sb = new StringBuilder
-    layers.reverse.zipWithIndex.map {
-      case (layer: List[Neuron], index: Int) => {
-        sb.append(s"========= Layer $index ============\n")
-        layer.map(neuron => sb.append(s"${neuron.print()}\n"))
-      }
+  override def print(visitor:NetworkTraverse):Unit = {
+    layers.reverse.zipWithIndex.foreach {
+      case (layer: List[Neuron], index: Int) =>
+        visitor.visitLayer(index)
+        layer.foreach(neuron => visitor.visitNeuron(index, neuron))
     }
-    sb.toString()
+    visitor.finished()
   }
 }
 
