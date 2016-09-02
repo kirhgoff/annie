@@ -18,7 +18,6 @@ class Sigmoid extends TransferFunction {
 }
 
 class NeuronImpl(
-    val name:String,
     val bias: Double,
     val weights:List[Double],
     val sigmoid:TransferFunction)
@@ -27,7 +26,7 @@ class NeuronImpl(
   def output(inputs:List[Double]) : Double = {
     val sum = (inputs, weights).zipped.map((input, weight) => input*weight).sum
     val result = sigmoid.function(bias + sum)
-    println(s"Neuron $name inputs=$inputs result=$result")
+    println(s"Neuron inputs=$inputs result=$result")
     result
   }
 }
@@ -49,13 +48,13 @@ object NetworkFactory {
   val random = new Random()
   val sigmoid = new Sigmoid
 
-  def apply(inputs:Int, layers:List[Int]):Network = {
+  def makeRandom(inputs:Int, layers:List[Int]):Network = {
     val initial = layers.head
     val result = layers.tail.foldRight(List(neuronList(inputs, initial))) {
       (count: Int, neuronLists: List[List[Neuron]])
       => neuronList(neuronLists.head.length, count) :: neuronLists
     }
-    result.reverse
+    new NeuralNetworkImpl(result.reverse)
   }
 
   def neuronList(inputs: Int, count: Int): List[Neuron] = {
@@ -63,9 +62,11 @@ object NetworkFactory {
   }
 
   def newNeuron(inputs: Int): Neuron = {
-    new NeuronImpl("", randomDouble(), randomList(inputs), sigmoid)
+    new NeuronImpl(randomDouble(), randomList(inputs), sigmoid)
   }
 
-  def randomList(length:Int):List[Double] = List.tabulate(length)(_ => random.nextDouble())
+  def randomList(length:Int):List[Double] =
+    List.tabulate(length)(_ => random.nextDouble())
+
   def randomDouble() = random.nextDouble()
 }
