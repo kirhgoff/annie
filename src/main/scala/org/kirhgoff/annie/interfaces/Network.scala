@@ -5,4 +5,5 @@ package org.kirhgoff.annie.interfaces
   */
 trait Network {
   def calculate(inputs:List[Double]):Double
+  def print():String
 }
