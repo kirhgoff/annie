@@ -45,18 +45,16 @@ class NeuralNetworkImpl(
    val layers:List[List[Neuron]])
   extends Network {
 
-  override def calculate(inputs: List[Double]): Double = {
+  override def calculate(inputs: List[Double]): List[Double] = {
     println("Calculating...")
-    assert(inputs.length == layers.reverse.head.head.inputSize())
-    val result = layers.foldRight(inputs)(
-      (layer, outputs) => layer.map(neuron => neuron.output(outputs))
+    assert(layers.head.forall(_.inputSize() == inputs.length))
+    layers.foldLeft(inputs)(
+      (outputs, layer) => layer.map(neuron => neuron.output(outputs))
     )
-    assert(result.length == 1)
-    result.head
   }
 
   override def print(visitor:NetworkTraverse):Unit = {
-    layers.reverse.zipWithIndex.foreach {
+    layers.zipWithIndex.foreach {
       case (layer: List[Neuron], index: Int) =>
         visitor.visitLayer(index)
         layer.foreach(neuron => visitor.visitNeuron(index, neuron))
@@ -69,13 +67,18 @@ object NetworkFactory {
   val random = new Random()
   val sigmoid = new Sigmoid
 
-  def makeRandom(inputs:Int, layers:List[Int]):Network = {
-    val initial = layers.head
-    val result = layers.tail.foldRight(List(neuronList(inputs, initial))) {
-      (count: Int, neuronLists: List[List[Neuron]])
-      => neuronList(neuronLists.head.length, count) :: neuronLists
+  def makeRandom(inputs:Int, layerSizes:List[Int]):Network = {
+    val initial = layerSizes.head
+    val result = layerSizes.tail.foldLeft(
+      List(neuronList(inputs, initial))
+    )
+    {
+      (neuronLists: List[List[Neuron]], count: Int)
+      => {
+        neuronList(neuronLists.head.length, count) :: neuronLists
+      }
     }
-    new NeuralNetworkImpl(result)
+    new NeuralNetworkImpl(result.reverse)
   }
 
   def neuronList(inputs: Int, count: Int): List[Neuron] = {
