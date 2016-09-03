@@ -1,6 +1,6 @@
 package org.kirhgoff.annie
 
-import org.kirhgoff.annie.interfaces.{Network, NetworkTraverse, Neuron, TransferFunction}
+import org.kirhgoff.annie.interfaces._
 
 import scala.util.Random
 
@@ -69,15 +69,11 @@ object NetworkFactory {
 
   def makeRandom(inputs:Int, layerSizes:List[Int]):Network = {
     val initial = layerSizes.head
-    val result = layerSizes.tail.foldLeft(
-      List(neuronList(inputs, initial))
-    )
-    {
-      (neuronLists: List[List[Neuron]], count: Int)
-      => {
+    val result = layerSizes.tail.foldLeft(List(neuronList(inputs, initial)))(
+      (neuronLists: List[List[Neuron]], count: Int) => {
         neuronList(neuronLists.head.length, count) :: neuronLists
-      }
-    }
+      })
+
     new NeuralNetworkImpl(result.reverse)
   }
 
@@ -96,5 +92,11 @@ object NetworkFactory {
 
   def print(network:Network) = {
     println(network.toString)
+  }
+}
+
+class BackPropagationImpl extends BackPropagation {
+  override def learn(input: List[Double], output: List[Double]): Network = {
+    
   }
 }
