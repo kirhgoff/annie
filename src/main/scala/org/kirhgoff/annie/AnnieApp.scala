@@ -1,5 +1,6 @@
 package org.kirhgoff.annie
 
+import org.kirhgoff.annie.impl.NetworkFactory
 import org.kirhgoff.annie.interfaces.{NetworkTraverse, Neuron}
 
 import scala.util.Random

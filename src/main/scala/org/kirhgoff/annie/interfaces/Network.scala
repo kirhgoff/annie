@@ -6,4 +6,5 @@ package org.kirhgoff.annie.interfaces
 trait Network {
   def calculate(inputs:List[Double]):List[Double]
   def print(visitor: NetworkTraverse):Unit
+  def layer(index:Int):List[Neuron]
 }

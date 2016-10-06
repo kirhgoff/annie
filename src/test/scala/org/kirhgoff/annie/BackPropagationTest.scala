@@ -1,6 +1,7 @@
 package org.kirhgoff.annie
 
-import org.kirhgoff.annie.interfaces.BackPropagation
+import org.kirhgoff.annie.backpropagation.BackPropagation
+import org.kirhgoff.annie.impl.NetworkFactory
 import org.scalatest._
 
 class BackPropagationTest extends FlatSpec with Matchers {
