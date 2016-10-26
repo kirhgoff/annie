@@ -18,10 +18,8 @@ class NeuronImpl(
     result
   }
 
-  override def inputSize(): Int = weights.length
-
-  override def print(): String = {
-    s"Neuron [${inputSize()} weights=$weights bias=$bias sigmoid=$sigmoid]"
+  override def toString: String = {
+    s"Neuron [weights=$weights bias=$bias sigmoid=$sigmoid]"
   }
 }
 
