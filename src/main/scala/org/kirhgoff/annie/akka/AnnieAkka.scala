@@ -1,24 +1,29 @@
 package org.kirhgoff.annie.akka
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 
 import scala.collection.mutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import akka.pattern.ask
 
-private case class Neuron(weights:List[Double], bias:Double, function:Double=>Double)
-private case class Layer(neurons:List[Neuron])
+case class Layers(inputs:Int, layers: Traversable[Int])
 
-case class Calculate(inputs: List[Double])
-case class Result(inputs: List[Double])
-case class NeuronResult(output:Double)
+private case class FirstLayer(actorRef: ActorRef)
+private case class Calculate(inputs: List[Double])
+private case class Result(inputs: List[Double])
+private case class NeuronResult(output:Double)
 
-object NeuralNetworkBuilder {
-  def build (layers:List[Layer]):NeuralNetworkActor = {
-    
+class NeuralNetworkActor extends Actor {
+  var firstLayer:ActorRef = _
+
+  def building : Receive = {
+    case FirstLayer(actorRef) =>
+      this.firstLayer = actorRef
+      context become active
   }
-}
 
-class NeuralNetworkActor(val firstLayer:ActorRef) extends Actor {
-  override def receive = {
+  def active : Receive = {
     case x:Calculate =>
       println(s"Input is ${x.inputs}")
       firstLayer ! x
@@ -26,12 +31,8 @@ class NeuralNetworkActor(val firstLayer:ActorRef) extends Actor {
     case Result(output:List[Double]) =>
       println(s"Output is: $output")
   }
-}
 
-class OutputLayer(val receiver:ActorRef) extends Actor {
-  override def receive = {
-    case _ => receiver ! _
-  }
+  override def receive = building
 }
 
 class LayerActor(val neurons:List[ActorRef], val nextLayer:ActorRef) extends Actor {
@@ -60,12 +61,35 @@ class NeuronActor(val weights:List[Double],
 
 }
 
+object AnnieBuilder {
+  def build(system:ActorSystem, schema: Layers) = {
+    val network:ActorRef = system.actorOf(Props(new NeuralNetworkActor()), name="network")
+    //TODO
+
+//    schema.layers.foldRight(network)((layer:Int, nextActor) => {
+//      (1 to layer).map(index => network.
+//    })
+    network
+  }
+}
 
 /**
-  * Created by kirilllastovirya on 11/10/2016.
+  * Main app
   */
 object AnnieAkka {
+  val input = List(
+    1d, 0d, 0d,
+    0d, 0d, 0d,
+    0d, 0d, 0d)
 
+  println(s"Calculating network with inputs:$input")
+
+  val system = ActorSystem("annie-akka-system")
+  val network = AnnieBuilder.build(system, Layers(inputs=9, layers=List(9, 1)))
+  val future = network ? Calculate (input)
+
+  val result = Await.result(future, 1.seconds).asInstanceOf[List[Double]]
+  println(s"Result of calculation is $result")
 }
 
 
