@@ -1,5 +1,6 @@
 package org.kirhgoff.annie.akka
 
+import akka.actor.Actor.Receive
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 
 import scala.collection.mutable
@@ -7,19 +8,34 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.pattern.ask
 
-case class Layers(inputs:Int, layers: Traversable[Int])
+case class Layers(inputs:Int, layers: List[Int])
+private case class LayerSchema(inputs:Int, neurons:Int)
 
-private case class FirstLayer(actorRef: ActorRef)
+private case class BuildLayers(schema:Layers)
+private case class BuildNeurons(inputs:Int, count:Int, next:ActorRef)
+
 private case class Calculate(inputs: List[Double])
 private case class Result(inputs: List[Double])
 private case class NeuronResult(output:Double)
+
+
 
 class NeuralNetworkActor extends Actor {
   var firstLayer:ActorRef = _
 
   def building : Receive = {
-    case FirstLayer(actorRef) =>
-      this.firstLayer = actorRef
+    case BuildLayers(schema) =>
+      val layersCount: Int = schema.layers.length
+      val layerActors:List[ActorRef] =
+        List.fill(layersCount)(context.actorOf(Props(new LayerActor())))
+
+      firstLayer = layerActors.head
+
+      val inputs:List[Int] = schema.inputs :: schema.layers.dropRight(1)
+      val nexts:List[ActorRef] = layerActors.tail :+ self //for the last one the next is me
+      for (input <- inputs; count <- schema.layers; next <- nexts; actor <- layerActors )
+        actor ! BuildNeurons(input, count, next)
+
       context become active
   }
 
@@ -35,9 +51,20 @@ class NeuralNetworkActor extends Actor {
   override def receive = building
 }
 
-class LayerActor(val neurons:List[ActorRef], val nextLayer:ActorRef) extends Actor {
+class LayerActor() extends Actor {
+  var nextLayer:ActorRef = _
+  var neurons:List[ActorRef] = _
+
   val tempResults:mutable.MutableList[NeuronResult] = mutable.MutableList()
-  override def receive = {
+
+  def building: Receive = {
+    case BuildNeurons(inputs, count, next) => {
+      nextLayer = next
+      neurons = List.fill(count)(context.actorOf(Props(new NeuronActor())))
+    }
+  }
+
+  def active: Receive = {
     case x:Calculate => neurons.foreach(_ ! x)
     case x:NeuronResult =>
       tempResults += x
@@ -47,6 +74,8 @@ class LayerActor(val neurons:List[ActorRef], val nextLayer:ActorRef) extends Act
         nextLayer ! Calculate(values)
       }
   }
+
+  override def receive = building
 }
 
 class NeuronActor(val weights:List[Double],
